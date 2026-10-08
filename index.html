@@ -1,0 +1,903 @@
+<title>Тарҷумон — Tajik Translator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap">
+
+<style>
+  /* ── Design tokens ─────────────────────────────────────────── */
+  /* Layout: two stacked translation panels inside a centered card */
+  :root {
+    --bg:        #f0ede8;
+    --surface:   #ffffff;
+    --surface2:  #f7f5f2;
+    --border:    #e2ddd6;
+    --primary:   #1a4480;
+    --primary-h: #163870;
+    --accent:    #c8991a;
+    --accent-h:  #b08816;
+    --fg:        #111827;
+    --fg-2:      #4b5563;
+    --fg-3:      #9ca3af;
+    --success:   #15803d;
+    --radius:    12px;
+    --radius-sm: 8px;
+    --shadow:    0 2px 8px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:        #0c1524;
+      --surface:   #162032;
+      --surface2:  #1e2d42;
+      --border:    #2a3a52;
+      --primary:   #3b6fd4;
+      --primary-h: #4d80e4;
+      --accent:    #d4a831;
+      --accent-h:  #e0ba44;
+      --fg:        #f1f5f9;
+      --fg-2:      #94a3b8;
+      --fg-3:      #4b5c72;
+      --success:   #22c55e;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:        #0c1524;
+    --surface:   #162032;
+    --surface2:  #1e2d42;
+    --border:    #2a3a52;
+    --primary:   #3b6fd4;
+    --primary-h: #4d80e4;
+    --accent:    #d4a831;
+    --accent-h:  #e0ba44;
+    --fg:        #f1f5f9;
+    --fg-2:      #94a3b8;
+    --fg-3:      #4b5c72;
+    --success:   #22c55e;
+    color-scheme: dark;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100%;
+    padding-inline: 16px;
+    padding-block: 24px;
+  }
+
+  /* ── Header ───────────────────────────────────────────────── */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .header-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: var(--primary);
+    border-radius: 10px;
+    display: grid; place-items: center;
+    color: #fff;
+    font-size: 20px;
+    box-shadow: 0 2px 6px rgba(26,68,128,.4);
+  }
+  .logo-text {
+    font-family: 'Noto Serif', serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -.02em;
+  }
+  .header-sub {
+    font-size: .85rem;
+    color: var(--fg-2);
+    letter-spacing: .04em;
+  }
+
+  /* ── Mode tabs ─────────────────────────────────────────────── */
+  .wrapper {
+    max-width: 760px;
+    margin-inline: auto;
+  }
+  .mode-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .mode-tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--fg-2);
+    font-family: inherit;
+    font-size: .9rem;
+    font-weight: 500;
+    padding: 9px 16px;
+    border-radius: calc(var(--radius) - 2px);
+    cursor: pointer;
+    transition: all .18s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .mode-tab:hover { background: var(--surface2); color: var(--fg); }
+  .mode-tab.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(26,68,128,.35);
+  }
+
+  /* ── Translator card ────────────────────────────────────────── */
+  .translator-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+
+  /* Language bar */
+  .lang-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .lang-select-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .lang-select {
+    width: 100%;
+    appearance: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    font-family: inherit;
+    font-size: .88rem;
+    font-weight: 600;
+    padding: 8px 32px 8px 12px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .lang-select:focus { outline: none; border-color: var(--primary); }
+  .lang-select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--fg-2);
+    pointer-events: none;
+    font-size: .8rem;
+  }
+  .swap-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg-2);
+    border-radius: var(--radius-sm);
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .swap-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .swap-btn:active { transform: scale(.94); }
+
+  /* Panels */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+  }
+  @media (max-width: 560px) {
+    .panels { grid-template-columns: 1fr; }
+    .panel-divider { display: none; }
+  }
+  .panel-divider {
+    background: var(--border);
+    width: 1px;
+  }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
+  }
+  .panel-label {
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    padding: 10px 16px 6px;
+  }
+  .panel-input, .panel-output {
+    flex: 1;
+    padding: 0 16px 12px;
+    position: relative;
+  }
+  textarea.text-area {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--fg);
+    font-family: 'Noto Sans', sans-serif;
+    font-size: .97rem;
+    line-height: 1.65;
+    resize: none;
+    outline: none;
+    height: 100%;
+    min-height: 120px;
+  }
+  .output-text {
+    color: var(--fg);
+    font-size: .97rem;
+    line-height: 1.65;
+    min-height: 120px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .output-placeholder {
+    color: var(--fg-3);
+    font-style: italic;
+    font-size: .92rem;
+  }
+
+  /* Word mode special */
+  .word-mode textarea.text-area {
+    font-size: 1.3rem;
+    font-weight: 500;
+  }
+  .word-mode .output-text {
+    font-size: 1.3rem;
+    font-weight: 500;
+  }
+
+  /* Panel footer */
+  .panel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    gap: 8px;
+    min-height: 44px;
+  }
+  .char-count {
+    font-size: .75rem;
+    color: var(--fg-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .panel-actions { display: flex; gap: 6px; }
+
+  .btn-sm {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg-2);
+    border-radius: 6px;
+    padding: 5px 11px;
+    font-family: inherit;
+    font-size: .78rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    transition: all .15s;
+  }
+  .btn-sm:hover { background: var(--surface2); color: var(--fg); }
+  .btn-sm.accent {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn-sm.accent:hover { background: var(--accent-h); border-color: var(--accent-h); }
+  .btn-sm.success { background: var(--success); border-color: var(--success); color: #fff; }
+
+  /* Translate button */
+  .translate-trigger {
+    display: flex;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    justify-content: center;
+  }
+  .btn-translate {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: .95rem;
+    font-weight: 600;
+    padding: 11px 40px;
+    cursor: pointer;
+    letter-spacing: .02em;
+    transition: all .18s;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 2px 8px rgba(26,68,128,.35);
+  }
+  .btn-translate:hover { background: var(--primary-h); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,68,128,.4); }
+  .btn-translate:active { transform: translateY(0); }
+  .btn-translate:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* Spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    display: none;
+  }
+  .spinner.active { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* History */
+  .history-section {
+    margin-top: 20px;
+  }
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .history-title {
+    font-size: .82rem;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--fg-2);
+  }
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+    box-shadow: var(--shadow);
+  }
+  .history-item:hover { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,68,128,.12); }
+  .history-pair {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .history-src {
+    flex: 1;
+    font-size: .88rem;
+    color: var(--fg);
+    word-break: break-word;
+  }
+  .history-arrow {
+    color: var(--accent);
+    font-size: .9rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .history-tgt {
+    flex: 1;
+    font-size: .88rem;
+    color: var(--fg-2);
+    word-break: break-word;
+  }
+  .history-meta {
+    font-size: .72rem;
+    color: var(--fg-3);
+    margin-top: 4px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--fg);
+    color: var(--bg);
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: .85rem;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    opacity: 0;
+    transition: all .22s;
+    z-index: 99;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Error */
+  .error-msg {
+    color: #dc2626;
+    font-size: .84rem;
+    padding: 8px 16px;
+    display: none;
+  }
+  .error-msg.visible { display: block; }
+
+  /* Theme toggle */
+  .theme-toggle {
+    position: fixed;
+    top: 16px; right: 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg-2);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    cursor: pointer;
+    font-size: 1rem;
+    box-shadow: var(--shadow);
+    transition: all .15s;
+    z-index: 10;
+  }
+  .theme-toggle:hover { background: var(--surface2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+
+<!-- Theme toggle -->
+<button class="theme-toggle" id="themeToggle" title="Переключить тему" aria-label="Toggle theme">🌙</button>
+
+<div class="wrapper">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">
+      <div class="logo-icon">🌐</div>
+      <span class="logo-text">Тарҷумон</span>
+    </div>
+    <div class="header-sub">Тоҷикӣ ⟷ Тарҷумаи забонҳо · Tajik Translator</div>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs" role="tablist">
+    <button class="mode-tab active" id="tabWord" role="tab" aria-selected="true" data-mode="word">
+      <span>🔤</span> Калима (Слово)
+    </button>
+    <button class="mode-tab" id="tabSentence" role="tab" aria-selected="false" data-mode="sentence">
+      <span>📝</span> Ҷумла (Предложение)
+    </button>
+  </div>
+
+  <!-- Translator -->
+  <div class="translator-card" id="translatorCard">
+    <!-- Language bar -->
+    <div class="lang-bar">
+      <div class="lang-select-wrap">
+        <select class="lang-select" id="langFrom" aria-label="Source language">
+          <option value="tg">🇹🇯 Тоҷикӣ (Tajik)</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="ar">🇸🇦 العربية</option>
+          <option value="tr">🇹🇷 Türkçe</option>
+          <option value="uz">🇺🇿 O'zbek</option>
+          <option value="fa">🇮🇷 فارسی</option>
+          <option value="zh">🇨🇳 中文</option>
+          <option value="es">🇪🇸 Español</option>
+        </select>
+      </div>
+      <button class="swap-btn" id="swapBtn" title="Поменять языки местами" aria-label="Swap languages">⇄</button>
+      <div class="lang-select-wrap">
+        <select class="lang-select" id="langTo" aria-label="Target language">
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="en">🇬🇧 English</option>
+          <option value="tg">🇹🇯 Тоҷикӣ (Tajik)</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="ar">🇸🇦 العربية</option>
+          <option value="tr">🇹🇷 Türkçe</option>
+          <option value="uz">🇺🇿 O'zbek</option>
+          <option value="fa">🇮🇷 فارسی</option>
+          <option value="zh">🇨🇳 中文</option>
+          <option value="es">🇪🇸 Español</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Panels -->
+    <div class="panels" id="panels">
+      <!-- Source panel -->
+      <div class="panel" id="sourcePanel">
+        <div class="panel-label" id="sourceLangLabel">Тоҷикӣ</div>
+        <div class="panel-input">
+          <textarea class="text-area" id="sourceText" placeholder="Матнро дар ин ҷо нависед…  / Введите текст…" rows="4" aria-label="Source text" maxlength="5000"></textarea>
+        </div>
+        <div class="panel-footer">
+          <span class="char-count" id="charCount">0 / 5000</span>
+          <div class="panel-actions">
+            <button class="btn-sm" id="clearBtn" title="Очистить">✕ Тоза</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-divider" aria-hidden="true"></div>
+
+      <!-- Output panel -->
+      <div class="panel" id="outputPanel">
+        <div class="panel-label" id="targetLangLabel">Русский</div>
+        <div class="panel-input">
+          <div class="output-text" id="outputText">
+            <span class="output-placeholder">Тарҷума дар ин ҷо намоиш дода мешавад…</span>
+          </div>
+          <div class="error-msg" id="errorMsg"></div>
+        </div>
+        <div class="panel-footer">
+          <span></span>
+          <div class="panel-actions">
+            <button class="btn-sm" id="copyBtn" title="Скопировать перевод">📋 Нусха</button>
+            <button class="btn-sm" id="speakBtn" title="Прослушать">🔊 Гӯш</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Translate trigger -->
+    <div class="translate-trigger">
+      <button class="btn-translate" id="translateBtn">
+        <span class="spinner" id="spinner"></span>
+        <span id="btnLabel">🔄 Тарҷума кун</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section" id="historySection" style="display:none">
+    <div class="history-header">
+      <span class="history-title">📚 Таърих / История</span>
+      <button class="btn-sm" id="clearHistoryBtn">Тоза кардан</button>
+    </div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── State ─────────────────────────────────────────────── */
+  let mode = 'word';           // 'word' | 'sentence'
+  let history = [];
+  let translating = false;
+  let autoTimer = null;
+
+  /* ── Elements ──────────────────────────────────────────── */
+  const tabWord        = document.getElementById('tabWord');
+  const tabSentence    = document.getElementById('tabSentence');
+  const langFrom       = document.getElementById('langFrom');
+  const langTo         = document.getElementById('langTo');
+  const swapBtn        = document.getElementById('swapBtn');
+  const sourceText     = document.getElementById('sourceText');
+  const outputText     = document.getElementById('outputText');
+  const errorMsg       = document.getElementById('errorMsg');
+  const translateBtn   = document.getElementById('translateBtn');
+  const btnLabel       = document.getElementById('btnLabel');
+  const spinner        = document.getElementById('spinner');
+  const charCount      = document.getElementById('charCount');
+  const clearBtn       = document.getElementById('clearBtn');
+  const copyBtn        = document.getElementById('copyBtn');
+  const speakBtn       = document.getElementById('speakBtn');
+  const historySection = document.getElementById('historySection');
+  const historyList    = document.getElementById('historyList');
+  const clearHistoryBtn= document.getElementById('clearHistoryBtn');
+  const toast          = document.getElementById('toast');
+  const themeToggle    = document.getElementById('themeToggle');
+  const translatorCard = document.getElementById('translatorCard');
+  const sourceLangLabel= document.getElementById('sourceLangLabel');
+  const targetLangLabel= document.getElementById('targetLangLabel');
+
+  /* ── Language labels ───────────────────────────────────── */
+  const langLabels = {
+    tg: 'Тоҷикӣ', ru: 'Русский', en: 'English', de: 'Deutsch',
+    fr: 'Français', ar: 'العربية', tr: 'Türkçe', uz: "O'zbek",
+    fa: 'فارسی', zh: '中文', es: 'Español'
+  };
+
+  /* ── Theme ──────────────────────────────────────────────── */
+  let theme = 'system';
+  try { theme = localStorage.getItem('tarj-theme') || 'system'; } catch(e) {}
+
+  function applyTheme(t) {
+    theme = t;
+    const root = document.documentElement;
+    if (t === 'dark')  { root.setAttribute('data-theme', 'dark');  themeToggle.textContent = '☀️'; }
+    else if (t === 'light') { root.setAttribute('data-theme', 'light'); themeToggle.textContent = '🌙'; }
+    else { root.removeAttribute('data-theme'); themeToggle.textContent = '🌙'; }
+    try { localStorage.setItem('tarj-theme', t); } catch(e) {}
+  }
+
+  themeToggle.addEventListener('click', () => {
+    applyTheme(theme === 'dark' ? 'light' : 'dark');
+  });
+  applyTheme(theme);
+
+  /* ── Mode switching ─────────────────────────────────────── */
+  function setMode(m) {
+    mode = m;
+    const isWord = m === 'word';
+    tabWord.classList.toggle('active', isWord);
+    tabSentence.classList.toggle('active', !isWord);
+    tabWord.setAttribute('aria-selected', isWord);
+    tabSentence.setAttribute('aria-selected', !isWord);
+    translatorCard.classList.toggle('word-mode', isWord);
+    sourceText.placeholder = isWord
+      ? 'Калима нависед…  / Введите слово…'
+      : 'Ҷумла ё матн нависед…  / Введите предложение или текст…';
+    sourceText.rows = isWord ? 2 : 5;
+    clearOutput();
+    sourceText.value = '';
+    updateCharCount();
+  }
+
+  tabWord.addEventListener('click', () => setMode('word'));
+  tabSentence.addEventListener('click', () => setMode('sentence'));
+
+  /* ── Language labels update ─────────────────────────────── */
+  function updateLangLabels() {
+    sourceLangLabel.textContent = langLabels[langFrom.value] || langFrom.value;
+    targetLangLabel.textContent = langLabels[langTo.value]   || langTo.value;
+  }
+
+  langFrom.addEventListener('change', () => { updateLangLabels(); clearOutput(); });
+  langTo.addEventListener('change',   () => { updateLangLabels(); clearOutput(); });
+
+  /* ── Swap ───────────────────────────────────────────────── */
+  swapBtn.addEventListener('click', () => {
+    const tmp = langFrom.value;
+    langFrom.value = langTo.value;
+    langTo.value = tmp;
+    updateLangLabels();
+
+    // swap text too if there's a translation
+    const cur = outputText.textContent.trim();
+    if (cur && !outputText.querySelector('.output-placeholder')) {
+      const src = sourceText.value;
+      sourceText.value = cur;
+      outputText.textContent = src || '';
+      if (!src) showPlaceholder();
+    } else {
+      clearOutput();
+    }
+    updateCharCount();
+  });
+
+  /* ── Char counter ───────────────────────────────────────── */
+  function updateCharCount() {
+    const n = sourceText.value.length;
+    charCount.textContent = n + ' / 5000';
+  }
+  sourceText.addEventListener('input', () => {
+    updateCharCount();
+    // Auto-translate words with 300ms debounce
+    if (mode === 'word') {
+      clearTimeout(autoTimer);
+      autoTimer = setTimeout(() => {
+        if (sourceText.value.trim()) translate();
+      }, 400);
+    }
+  });
+
+  /* ── Output helpers ─────────────────────────────────────── */
+  function showPlaceholder() {
+    outputText.innerHTML = '<span class="output-placeholder">Тарҷума дар ин ҷо намоиш дода мешавад…</span>';
+  }
+  function clearOutput() {
+    showPlaceholder();
+    hideError();
+  }
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('visible');
+  }
+  function hideError() {
+    errorMsg.classList.remove('visible');
+    errorMsg.textContent = '';
+  }
+
+  /* ── Clear source ───────────────────────────────────────── */
+  clearBtn.addEventListener('click', () => {
+    sourceText.value = '';
+    updateCharCount();
+    clearOutput();
+    sourceText.focus();
+  });
+
+  /* ── Copy ───────────────────────────────────────────────── */
+  copyBtn.addEventListener('click', () => {
+    const txt = outputText.innerText.trim();
+    if (!txt || outputText.querySelector('.output-placeholder')) {
+      showToast('Тарҷума нест!');
+      return;
+    }
+    navigator.clipboard.writeText(txt).then(() => {
+      copyBtn.classList.add('success');
+      copyBtn.textContent = '✓ Нусха шуд';
+      showToast('Нусха шуд / Скопировано!');
+      setTimeout(() => { copyBtn.classList.remove('success'); copyBtn.innerHTML = '📋 Нусха'; }, 1800);
+    }).catch(() => {
+      // fallback: select
+      const range = document.createRange();
+      range.selectNodeContents(outputText);
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+      showToast('Матнро интихоб кунед ва Ctrl+C');
+    });
+  });
+
+  /* ── Speak ──────────────────────────────────────────────── */
+  speakBtn.addEventListener('click', () => {
+    const txt = outputText.innerText.trim();
+    if (!txt || outputText.querySelector('.output-placeholder')) return;
+    if (!window.speechSynthesis) { showToast('Браузер садоро дастгирӣ намекунад'); return; }
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(txt);
+    utt.lang = langTo.value;
+    window.speechSynthesis.speak(utt);
+  });
+
+  /* ── Toast ──────────────────────────────────────────────── */
+  let toastTimer;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  /* ── Translate ──────────────────────────────────────────── */
+  translateBtn.addEventListener('click', translate);
+
+  // Keyboard shortcut: Ctrl+Enter for sentence mode
+  sourceText.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      translate();
+    }
+    if (mode === 'sentence' && e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+      // allow normal newline
+    }
+  });
+
+  async function translate() {
+    const src = sourceText.value.trim();
+    if (!src) { showToast('Матнро ворид кунед!'); return; }
+    if (translating) return;
+    if (langFrom.value === langTo.value) {
+      outputText.textContent = src;
+      return;
+    }
+
+    translating = true;
+    translateBtn.disabled = true;
+    spinner.classList.add('active');
+    btnLabel.textContent = 'Тарҷума…';
+    hideError();
+
+    const langpair = `${langFrom.value}|${langTo.value}`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(src)}&langpair=${langpair}`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Сервер хато дод: ' + res.status);
+      const data = await res.json();
+
+      if (data.responseStatus === 200 || data.responseStatus === '200') {
+        const translated = data.responseData.translatedText;
+        outputText.textContent = translated;
+        hideError();
+        addToHistory(src, translated);
+      } else {
+        throw new Error(data.responseDetails || 'Тарҷума мумкин набуд');
+      }
+    } catch (err) {
+      let msg = err.message || 'Тарҷума мумкин набуд';
+      if (msg.includes('fetch') || msg.includes('Failed') || msg.includes('network')) {
+        msg = 'Интернет пайваст нест. Пайвастро тафтиш кунед.';
+      }
+      showError('⚠ ' + msg);
+      showPlaceholder();
+    } finally {
+      translating = false;
+      translateBtn.disabled = false;
+      spinner.classList.remove('active');
+      btnLabel.textContent = '🔄 Тарҷума кун';
+    }
+  }
+
+  /* ── History ────────────────────────────────────────────── */
+  function addToHistory(src, tgt) {
+    history.unshift({
+      src, tgt,
+      from: langFrom.value, to: langTo.value,
+      label: (langLabels[langFrom.value] || langFrom.value) + ' → ' + (langLabels[langTo.value] || langTo.value),
+      time: new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' })
+    });
+    if (history.length > 20) history.pop();
+    try { localStorage.setItem('tarj-history', JSON.stringify(history)); } catch(e) {}
+    renderHistory();
+  }
+
+  function renderHistory() {
+    if (!history.length) { historySection.style.display = 'none'; return; }
+    historySection.style.display = 'block';
+    historyList.innerHTML = '';
+    history.slice(0, 8).forEach((item, i) => {
+      const el = document.createElement('div');
+      el.className = 'history-item';
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      el.setAttribute('aria-label', item.src + ' → ' + item.tgt);
+      el.innerHTML = `
+        <div class="history-pair">
+          <span class="history-src">${escHtml(item.src)}</span>
+          <span class="history-arrow">→</span>
+          <span class="history-tgt">${escHtml(item.tgt)}</span>
+        </div>
+        <div class="history-meta">${escHtml(item.label)} · ${item.time}</div>
+      `;
+      el.addEventListener('click', () => {
+        langFrom.value = item.from;
+        langTo.value   = item.to;
+        updateLangLabels();
+        sourceText.value = item.src;
+        outputText.textContent = item.tgt;
+        updateCharCount();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') el.click(); });
+      historyList.appendChild(el);
+    });
+  }
+
+  clearHistoryBtn.addEventListener('click', () => {
+    history = [];
+    try { localStorage.removeItem('tarj-history'); } catch(e) {}
+    historySection.style.display = 'none';
+  });
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Init ───────────────────────────────────────────────── */
+  try {
+    const saved = localStorage.getItem('tarj-history');
+    if (saved) { history = JSON.parse(saved); renderHistory(); }
+  } catch(e) {}
+
+  updateLangLabels();
+  setMode('word');
+  sourceText.focus();
+})();
+</script>
