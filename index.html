@@ -804,26 +804,33 @@
     btnLabel.textContent = 'Тарҷума…';
     hideError();
 
-    const langpair = `${langFrom.value}|${langTo.value}`;
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(src)}&langpair=${langpair}`;
+    const from = langFrom.value;
+    const to   = langTo.value;
+    // Google Translate unofficial API — лучше поддерживает таджикский (tg)
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=${to}&dt=t&q=${encodeURIComponent(src)}`;
 
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error('Сервер хато дод: ' + res.status);
       const data = await res.json();
 
-      if (data.responseStatus === 200 || data.responseStatus === '200') {
-        const translated = data.responseData.translatedText;
+      // Формат ответа: [[[segment, original, ...], ...], ...]
+      if (Array.isArray(data) && Array.isArray(data[0])) {
+        const translated = data[0]
+          .filter(seg => Array.isArray(seg) && seg[0])
+          .map(seg => seg[0])
+          .join('');
+        if (!translated) throw new Error('Тарҷума холӣ баргашт');
         outputText.textContent = translated;
         hideError();
         addToHistory(src, translated);
       } else {
-        throw new Error(data.responseDetails || 'Тарҷума мумкин набуд');
+        throw new Error('Тарҷума мумкин набуд');
       }
     } catch (err) {
       let msg = err.message || 'Тарҷума мумкин набуд';
-      if (msg.includes('fetch') || msg.includes('Failed') || msg.includes('network')) {
-        msg = 'Интернет пайваст нест. Пайвастро тафтиш кунед.';
+      if (msg.includes('fetch') || msg.includes('Failed') || msg.includes('network') || msg.includes('Load')) {
+        msg = 'Интернет пайваст нест ё хизмат дастрас нест.';
       }
       showError('⚠ ' + msg);
       showPlaceholder();
